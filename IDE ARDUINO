@@ -1,0 +1,162 @@
+//Variables
+ 
+ 
+int inByte = 0;    	// byte por puerto serie
+int sensorValue = 0;
+ 
+const int triggerPin1 = 9;   //trigger
+const int triggerPin2 = 11;
+ 
+const int echoPin1 = 10; 	//echo
+const int echoPin2 = 12;
+ 
+int distance1;   //distancia en centimetros
+int distance2;
+ 
+int enviar1; 	//distancia con valor a un byte
+int enviar2;
+ 
+int distanciaAnt1;	//distancia recogida en la lectura anterior
+int distanciaAnt2;
+ 
+unsigned long tiempoActual = 0;	//tiempo actual recogido
+unsigned long tiempoPrevio = 0;	//tiempo anterior
+ 
+long interval = 20;	//intervalo entre cada lectura
+ 
+ 
+void setup() {
+ 
+  // arranca el puerto serial a 9600 bps:
+  Serial.begin(9600);
+ 
+  //declara salidas
+  pinMode(triggerPin1, OUTPUT);
+  pinMode(triggerPin2, OUTPUT);
+ 
+  //declara entradas
+  pinMode(echoPin1, INPUT);
+  pinMode(echoPin2, INPUT);
+ 
+  // envia un byte para establecer contacto hasta la respuesta de processing
+  establecerContacto();
+ 
+  //declara el valor inicial de la distancia anterior
+  distanciaAnt1 = 127;
+  distanciaAnt2 = 127;
+}
+ 
+void loop() {
+ 
+  //millis
+ 
+  tiempoActual = millis();	// se graba el tiempo actual
+ 
+  //si el tiempo actual menos el previo es mayor o igual que el intervalo
+  if (tiempoActual - tiempoPrevio >= interval) {
+ 
+	tiempoPrevio = tiempoActual;  // actualizamos el tiempo
+ 
+	//se realizan las funciones de medir
+	medir1();
+	medir2();
+ 
+	// si llega un byte, lee analog ins:
+	if (Serial.available() > 0) {
+ 
+  	inByte = Serial.read();   // toma el byte entrante:
+ 
+ 
+ 
+	}
+ 
+  }
+}
+ 
+//medir valor del primer sensor
+void medir1() {
+ 
+  //lectura sensor
+  sensorValue = analogRead(sensorPin);
+  digitalWrite (triggerPin1, LOW);
+  delayMicroseconds(5);
+  digitalWrite (triggerPin1, HIGH);
+  delayMicroseconds(10);
+  digitalWrite(triggerPin1, LOW);
+  distance1 = pulseIn (echoPin1, HIGH, 14600);
+ 
+  distance1 = distance1 * 0.01715;  //pasar valor del sensor a cm
+  enviar1 = (distance1 * 255) / 75;   //pasa de cm a 0-255, un byte, entre los 0 y 75cm
+ 
+  //si el valor es mayor de 255, envia 255
+  if (enviar1 > 255) {
+	Serial.write(255);
+  }
+ 
+  //si no, envia ese valor si no es diferente en 50 bits del anterior
+  else {
+	if (enviar1 < distanciaAnt1 + 50 || enviar1 > distanciaAnt1 - 50) {
+ 
+  	//envia el valor si es mayor de 0
+  	if (enviar1 > 0) {
+    	Serial.write(enviar1);
+    	distanciaAnt1 = enviar1;   //declara la distancia anterior como la actual
+  	}
+ 
+  	//si no, envia la distancia anterior
+  	else {
+    	Serial.write(distanciaAnt1);
+  	}
+	}
+  }
+}
+ 
+//medir valor del segundo sensor
+void medir2() {
+ 
+  //lectura sensor
+  sensorValue = analogRead(sensorPin);
+  digitalWrite (triggerPin2, LOW);
+  delayMicroseconds(5);
+  digitalWrite (triggerPin2, HIGH);
+  delayMicroseconds(10);
+  digitalWrite(triggerPin2, LOW);
+  distance2 = pulseIn (echoPin2, HIGH, 14600);
+ 
+  distance2 = distance2 * 0.01715;   //pasa el valor del sensor a cm
+  enviar2 = (distance2 * 255) / 75;   //pasa de cm a 0-255, un byte, entre los 0 y 75cm
+ 
+  //si el valor es mayor de 255, envia 255
+  if (enviar2 > 255) {
+	Serial.write(255);
+  }
+ 
+  //si no, envia ese valor si no es diferente en 50 bits del anterior
+  else {
+ 
+	if (enviar2 < distanciaAnt2 + 50 || enviar2 > distanciaAnt2 - 50) {
+ 
+  	//envia el valor si es mayor de 0
+  	if (enviar2 > 0) {
+    	Serial.write(enviar2);
+    	distanciaAnt2 = enviar2;	//declara la distancia anterior como la actual
+  	}
+ 
+  	//si no, envia la distancia anterior
+  	else {
+    	Serial.write(distanciaAnt2);
+  	}
+	}
+  }
+}
+ 
+//pregunta a processing esperando una señal para empezar el contacto
+void establecerContacto() {
+  while (Serial.available() <= 0) {
+	Serial.write('A');  // manda una A mayuscula mientras no este comunicando
+	delay(300);   //lo hace cada 300 milisegundos
+  }
+}
+ 
+ 
+ 
