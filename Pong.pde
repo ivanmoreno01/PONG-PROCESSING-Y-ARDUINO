@@ -1,6 +1,6 @@
 import processing.serial.*;
  
-// importamos la librería
+// importamos la librería musica
 import ddf.minim.*;
  
 // Declaramos objeto musica de tipo Minim
@@ -54,10 +54,6 @@ boolean texto=false;
 int randomR;
 int randomG;
 int randomB;
- 
- 
- 
- 
  
 //clones
 Pelota miPelota1;
